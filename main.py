@@ -20,7 +20,7 @@ class Carte:
 
 
 class Pile:
-    
+
     cartes = [Carte(val, coul) for val in 'A K Q J 10 9 8 7'.split() for coul in '♥ ♦ ♣ ♠'.split()]
     r.shuffle(cartes)
 
@@ -28,10 +28,33 @@ class Pile:
         return " | ".join(map(repr, self.cartes))
 
     def couper(self) -> None:
-        self.cartes = self.cartes[16:] + self.cartes[:16]
+        milieu = len(self.cartes) // 2
+        self.cartes = self.cartes[milieu:] + self.cartes[:milieu]
+    
+    def distribuer(self, nb:int, joueur:object) -> None:
+        joueur.cartes += self.cartes[:nb]
+        self.cartes = self.cartes[nb:]
+
+
+class Joueur:
+    cartes = []
+    def __init__(self, nom, num) -> None:
+        self.nom = nom
+        self.num = num
+    
+    def __repr__(self) -> str:
+        return " | ".join(map(repr, self.cartes))
+
+
+class Jeu:
+    pass
+
 
 p = Pile()
 
 print(p)
-p.couper()
+j1 = Joueur("Ivan", 1)
+
+p.distribuer(4, j1)
+print(j1)
 print(p)
