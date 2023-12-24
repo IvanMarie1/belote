@@ -108,16 +108,30 @@ class Joueur:
     - nom: str\n
         nom du joueur"""
     
-    cartes:list[Carte] = []
+    
     def __init__(self, nom: str) -> None:
         """## Paramètres
         - nom: str \n
             nom du joueur"""
         self.nom = nom
+        self.cartes:list[Carte] = []
     
     def __repr__(self) -> str:
         """Affiche la main du joueur"""
         return " | ".join(map(repr, self.cartes))
+
+    def distribuer(self, nb:int, pile:object) -> None:
+        """Ajoute des cartes à un joueur et les retire de la pile
+        
+        ---
+        ## Paramètres
+        - nb: int \n
+            Nombre de cartes à distribuer
+        - pile: object \n
+            Pile qui reçoit les cartes"""
+        
+        pile.cartes += self.cartes[:nb]
+        self.cartes = self.cartes[nb:]
 
 
 
@@ -136,26 +150,65 @@ class Jeu:
         
     ---
     ## Méthodes
-    - choisir_atout() \n
-        Lance un tour où on choisit la couleur de l'atout"""
+    - tour_atout() \n
+        Lance un tour où on choisit la couleur de l'atout
+    - distribution() \n
+        Distribue les cartes aux joueurs et propose l'atout"""
+    
 
     atout:str = ""
     joueurs:list[Joueur] = [Joueur(nom) for nom in 'J1 J2 J3 J4'.split()]
     pile:Pile = Pile()
 
-    def choisir_atout(self) -> None:
-        """Lance un tour du jeu où on choisit l'atout"""
+
+    def tour_atout(self) -> None:
+        """Propose la première carte de la pile comme atout et les joueurs décident s'il la prenne ou pas"""
 
         carte_atout = self.pile.cartes[0]
         print(f"Atout = {carte_atout}")
 
-        # TODO mettre ça dans une fonction et répéter tant qu'il n'y a pas d'atout
-        for _ in range(2): # TODO changer le deuxième tour : le joueur peut décider de la couleur de l'atout
+        for j in self.joueurs:
+            print(f"{j.nom} : {j}")
+            rep = input(f"{j.nom}, veux-tu l'atout ? (o/n) ")
+            if rep == "o":
+                self.pile.distribuer(1, j)
+                self.atout = carte_atout.couleur
+                return
+            
+        for j in self.joueurs:
+            print(f"{j.nom} : {j}")
+            rep = input(f"{j.nom}, quelle couleur d'atout veux-tu ? (♥/♦/♣/♠/2) ")
+            if rep in '♥♦♣♠':
+                self.atout = rep
+                return
+        
+        # Personne n'a voulu l'atout : on ramasse et on coupe
+        for j in self.joueurs:
+            j.distribuer(5, self.pile)
+        self.pile.couper()
+
+    def distribution(self) -> None:
+        """Lance un tour du jeu où on distribue les cartes et on choisit l'atout"""
+        self.atout = ""
+
+        while self.atout == "": # Tant qu'il n'y a pas d'atout
             for j in self.joueurs:
-                rep = input(f"{j.nom} : veux-tu l'atout ? (o/n) ")
-                if rep == "o":
-                    self.pile.distribuer(1, j)
-                    self.atout = carte_atout.couleur
-                    return
-                
-        self.pile.couper() # personne ne veut l'atout
+                self.pile.distribuer(3, j)
+            for j in self.joueurs:
+                self.pile.distribuer(2, j)
+            
+            self.tour_atout()
+
+        # distribue les dernières cartes
+        for j in self.joueurs:
+            if len(j.cartes) == 5:
+                self.pile.distribuer(3, j)
+            else:
+                self.pile.distribuer(2, j)
+
+    # TODO
+    # Mettre un indice pour savoir qui est le donneur -> modifier l'indice à chaque "donne"
+    # Mettre une manche : 8 plis + compter les points
+    # Pli : chaque joueur à partir du donneur pose une carte (règles de pose) et à la fin le meilleur remporte le pli
+    # Comptage : On compte les points par équipe avec toutes les règles (voir site) et on l'ajoute à un compteur de la partie
+    # On repète les manches tant que le score max < 1001
