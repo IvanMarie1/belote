@@ -143,6 +143,8 @@ class Jeu:
     ## Attributs
     - atout: str \n
         Couleur de l'atout à un moment du jeu
+    - i_donneur: int \n
+        Position du donneur dans la liste de joeurs
     - joueur: list[Joueur] \n
         Liste des joueurs dans la partie
     - pile: Pile \n
@@ -157,6 +159,7 @@ class Jeu:
     
 
     atout:str = ""
+    i_donneur = r.randint(0,3)
     joueurs:list[Joueur] = [Joueur(nom) for nom in 'J1 J2 J3 J4'.split()]
     pile:Pile = Pile()
 
@@ -167,18 +170,20 @@ class Jeu:
         carte_atout = self.pile.cartes[0]
         print(f"Atout = {carte_atout}")
 
-        for j in self.joueurs:
-            print(f"{j.nom} : {j}")
-            rep = input(f"{j.nom}, veux-tu l'atout ? (o/n) ")
+        for i in range(4):
+            joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+            print(f"{joueur.nom} : {joueur}")
+            rep = input(f"{joueur.nom}, veux-tu l'atout ? (o/n) ")
             if rep == "o":
-                self.pile.distribuer(1, j)
+                self.pile.distribuer(1, joueur)
                 self.atout = carte_atout.couleur
                 return
             
-        for j in self.joueurs:
-            print(f"{j.nom} : {j}")
-            rep = input(f"{j.nom}, quelle couleur d'atout veux-tu ? (♥/♦/♣/♠/2) ")
-            if rep in '♥♦♣♠':
+        for i in range(4):
+            joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+            print(f"{joueur.nom} : {joueur}")
+            rep = input(f"{joueur.nom}, quelle couleur d'atout veux-tu ? (♥/♦/♣/♠/2) ")
+            if rep in '♥♦♣♠' and len(rep) > 0:
                 self.atout = rep
                 return
         
@@ -187,27 +192,31 @@ class Jeu:
             j.distribuer(5, self.pile)
         self.pile.couper()
 
+
     def distribution(self) -> None:
         """Lance un tour du jeu où on distribue les cartes et on choisit l'atout"""
         self.atout = ""
 
         while self.atout == "": # Tant qu'il n'y a pas d'atout
-            for j in self.joueurs:
-                self.pile.distribuer(3, j)
-            for j in self.joueurs:
-                self.pile.distribuer(2, j)
+            self.i_donneur += 1
+            for i in range(4):
+                joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+                self.pile.distribuer(3, joueur)
+            for i in range(4):
+                joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+                self.pile.distribuer(2, joueur)
             
             self.tour_atout()
 
         # distribue les dernières cartes
-        for j in self.joueurs:
-            if len(j.cartes) == 5:
-                self.pile.distribuer(3, j)
+        for i in range(4):
+            joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+            if len(joueur.cartes) == 5:
+                self.pile.distribuer(3, joueur)
             else:
-                self.pile.distribuer(2, j)
+                self.pile.distribuer(2, joueur)
 
     # TODO
-    # Mettre un indice pour savoir qui est le donneur -> modifier l'indice à chaque "donne"
     # Mettre une manche : 8 plis + compter les points
     # Pli : chaque joueur à partir du donneur pose une carte (règles de pose) et à la fin le meilleur remporte le pli
     # Comptage : On compte les points par équipe avec toutes les règles (voir site) et on l'ajoute à un compteur de la partie
