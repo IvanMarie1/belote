@@ -56,11 +56,11 @@ class Carte:
 
 
 class Pile:
-    """Une classe pour représenter une pile
+    """Une classe pour représenter une pile de cartes
 
     ---
     ### Attributs :
-    - cartes : list \n
+    - cartes : list[Carte] \n
         une liste d'objets Carte pour stocker les cartes qui sont dans la pile
 
     --- 
@@ -71,8 +71,10 @@ class Pile:
         ajoute des cartes à un joueur et les enlève de la pile
     """
 
-    cartes:list[Carte] = [Carte(val, coul) for val in 'A K Q J 10 9 8 7'.split() for coul in '♥ ♦ ♣ ♠'.split()]
-    r.shuffle(cartes)
+
+    def __init__(self) -> None:
+        self.cartes: list[Carte] = []
+    
 
     def __repr__(self) -> str:
         return " | ".join(map(repr, self.cartes))
@@ -121,7 +123,7 @@ class Joueur:
         return " | ".join(map(repr, self.cartes))
 
     def distribuer(self, nb:int, pile:object) -> None:
-        """Ajoute des cartes à un joueur et les retire de la pile
+        """Ajoute des cartes à une pile et les retire du jeu du joueur
         
         ---
         ## Paramètres
@@ -149,19 +151,28 @@ class Jeu:
         Liste des joueurs dans la partie
     - pile: Pile \n
         Pile des cartes de la partie
+    - pli: Pile \n
+        Pile des cartes qui sont en jeu dans un tour
         
     ---
     ## Méthodes
     - tour_atout() \n
         Lance un tour où on choisit la couleur de l'atout
     - distribution() \n
-        Distribue les cartes aux joueurs et propose l'atout"""
+        Distribue les cartes aux joueurs et propose l'atout
+    - tour() \n
+        Lance un tour du jeu où les joueurs posent leur carte"""
     
 
     atout:str = ""
     i_donneur = r.randint(0,3)
     joueurs:list[Joueur] = [Joueur(nom) for nom in 'J1 J2 J3 J4'.split()]
+
     pile:Pile = Pile()
+    pile.cartes = [Carte(val, coul) for val in 'A K Q J 10 9 8 7'.split() for coul in '♥ ♦ ♣ ♠'.split()]
+    r.shuffle(pile.cartes)
+
+    pli: Pile = Pile()
 
 
     def tour_atout(self) -> None:
@@ -216,6 +227,24 @@ class Jeu:
             else:
                 self.pile.distribuer(2, joueur)
 
+
+    def tour(self) -> None:
+        """Lance un tour du jeu et le joueur avec la meilleur carte remporte le pli et joue au tour suivant"""
+        print(f"{self.joueurs[(self.i_donneur + 1)%4]}")
+        for i in range(4):
+            joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
+
+            # premier joueur
+            if i == 0:
+                input(f"Au tour de {joueur.nom}")
+                print(f"{joueur.nom}: {joueur}")
+                i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
+                while 1 > i_carte  or i_carte > len(joueur.cartes):
+                    print("Carte non valide")
+                    i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
+
+                joueur.distribuer(1, self.pli)
+                
     # TODO
     # Mettre une manche : 8 plis + compter les points
     # Pli : chaque joueur à partir du donneur pose une carte (règles de pose) et à la fin le meilleur remporte le pli
