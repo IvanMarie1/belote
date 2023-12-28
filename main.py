@@ -86,7 +86,6 @@ class Pile:
 
     def __init__(self) -> None:
         self.cartes: list[Carte] = []
-    
 
     def __repr__(self) -> str:
         return " | ".join(map(repr, self.cartes))
@@ -192,7 +191,6 @@ class Joueur:
         self.cartes_gagnees: list[Carte] = []
     
     def __repr__(self) -> str:
-        """Affiche la main du joueur"""
         return " | ".join(map(repr, self.cartes))
 
     def distribuer(self, nb:int, pile:Pile) -> None:
@@ -255,7 +253,7 @@ class Jeu:
         Pile des cartes qui sont en jeu dans un tour
         
     ---
-    ## Méthodes
+    ### Méthodes
     tour_atout()
         Lance un tour où on choisit la couleur de l'atout
     
@@ -286,7 +284,8 @@ class Jeu:
 
         carte_atout = self.pile.cartes[0]
         print(f"Atout = {carte_atout}")
-
+        
+        # premier tour
         for i in range(4):
             joueur = self.joueurs[(self.i_donneur + i + 1)%4]
             print(f"{joueur.nom} : {joueur}")
@@ -295,7 +294,7 @@ class Jeu:
                 self.pile.distribuer(1, joueur.cartes)
                 self.atout = carte_atout.couleur
                 return
-            
+        # deuxième tour 
         for i in range(4):
             joueur = self.joueurs[(self.i_donneur + i + 1)%4]
             print(f"{joueur.nom} : {joueur}")
@@ -339,25 +338,8 @@ class Jeu:
         
         for i in range(4):
             joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
-
-            # premier joueur
             
-            input("\n" * 5 + f"Au tour de {joueur.nom}")
-            print(f"{joueur.nom}: {joueur}")
-
-            print(f"Carte posées : {self.pli}")
-
-            i_carte = int(input(f"Quelle carte voulez-vous jouer ? (1-{len(joueur.cartes)})"))
-
-            if i == 0: # premier joueur (pas de restriction)
-                while 1 > i_carte  or i_carte > len(joueur.cartes):
-                    print("Carte non valide")
-                    i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
-
-            else: # autres joueurs
-                while not self.carte_valide(i_carte, joueur):
-                    print("Carte non valide")
-                    i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
+            i_carte = self.choix_carte(i, joueur)
 
             joueur.jouer(i_carte, self.pli)
 
@@ -365,24 +347,58 @@ class Jeu:
         self.pli.distribuer(4, self.joueurs[i_maitre].cartes_gagnees)
         self.i_donneur = i_maitre - 1
 
-        
-    def carte_valide(self, i_carte: int, joueur: Joueur) -> bool:
+
+    def choix_carte(self, i_joueur: int, joueur: Joueur) -> int:
+        """Renvoie l'indice de la carte choisie par le joueur (à partir de 1) bonjour
+
+        ---
+        ### Paramètres
+        i_joueur: int
+            position dans le joueur dans le tour
+        joueur: Joueur
+            joueur qui doit choisir la carte
+        """
+        input("\n" * 5 + f"Au tour de {joueur.nom}")
+
+        print(f"{joueur.nom}: {joueur}")
+        print(f"Carte posées : {self.pli}")
+
+        i_carte = input(f"Quelle carte voulez-vous jouer ? (1-{len(joueur.cartes)})")
+
+        while not self.carte_valide(i_carte, joueur, i_joueur):
+            print("Carte non valide")
+            i_carte = input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})")
+
+        return i_carte
+
+
+    def carte_valide(self, i_carte: str, joueur: Joueur, i_joueur: int) -> bool:
         """Renvoie True si la carte peut être posée et False sinon
         
         ---
         ### Paramètres 
-        i_carte: int 
+        i_carte: str 
             Position de la carte dans le jeu du joueur
 
         joueur: Joueur
             Joueur qui pose la carte
+        
+        i_joueur: int
+            Position du joueur dans le tour
         """
+        try:
+            i_carte = int(i_carte)
+        except ValueError:
+            return False
+
         if 1 > i_carte  or i_carte > len(joueur.cartes):
             return False
+    
+        if i_joueur == 0: # le premier peut mettre ce qu'il veut
+            return True
         
         carte = joueur.cartes[i_carte - 1]
         pt_maitre, i_maitre = self.pli.maitre(self.atout)
-        i_maitre = (i_maitre + self.i_donneur + 1) % 4
 
         
         if self.atout in self.pli.couleurs(): # un atout a été posé avant 
@@ -393,18 +409,14 @@ class Jeu:
                 return False
             if carte.point(self.atout) >= pt_maitre: # le joueur monte à l'atout
                 return True
-            
-            for carte_temp in joueur.cartes:
-                if carte_temp.point(self.atout) >= pt_maitre: # le joueur peut monter à l'atout
-                    return False
-            return True
+            return not (True in [carte_temp.point(self.atout) >= pt_maitre for carte_temp in joueur.cartes]) # le joueur ne peut pas monter à l'atout
                 
         
         if carte.couleur == self.pli.cartes[0].couleur: # on joue la même couleur que l'entame
             return True
         if self.pli.cartes[0].couleur in joueur.couleurs(): # on peut jouer de la même couleur que l'entame
             return False
-        if (i_maitre - joueur.pos) % 2 == 0: # l'equipier est maitre (ecart entre les joueurs = 2)
+        if (i_maitre - i_joueur) % 2 == 0: # l'equipier est maitre (ecart entre les joueurs = 2)
             return True
         if carte.couleur == self.atout: # on joue atout
             return True
