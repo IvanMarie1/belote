@@ -6,31 +6,31 @@ class Carte:
     """Classe pour représenter une carte de jeu
 
     ---
-    ## Attributs :
+    ### Attributs :
     - points: dict \n
-        points d'une carte en fonction de sa valeur
+            points d'une carte en fonction de sa valeur
     - points_atout: dict \n
-        points d'une carte en fonction de sa valeur en étant atout
+            points d'une carte en fonction de sa valeur en étant atout
     - valeur: str \n
-        valeur de la carte (ex: J = Valet)
+            valeur de la carte (ex: J = Valet)
     - couleur: str \n
-        couleur de la carte (ex ♦ = Carreau)
+            couleur de la carte (ex ♦ = Carreau)
 
     ---
-    ## Méthode
-    - point(atout="")\n
-        Renvoie les points de la carte
+    ### Méthode
+    - point()\n
+            Renvoie les points de la carte
     """
     
     points: dict = {'A': 11, 'K': 4, 'Q': 3, 'J': 2, '10': 10, '9': 0, '8': 0, '7': 0}
     points_atout: dict = {'A': 11, 'K': 4, 'Q': 3, 'J': 20, '10': 10, '9': 14, '8': 0, '7': 0}
 
     def __init__(self, valeur: str, couleur: str) -> None:
-        """## Paramètres :
+        """### Paramètres :
         - valeur: str \n
-            valeur de la carte (ex: J = Valet)
+                valeur de la carte (ex: J = Valet)
         - couleur: str \n
-            couleur de la carte (ex ♦ = Carreau)
+                couleur de la carte (ex ♦ = Carreau)
         """
         self.valeur: str = valeur
         self.couleur: str = couleur
@@ -43,9 +43,9 @@ class Carte:
         """Renvoie les points de la carte en prenant en compte si c'est un atout
         
         ---
-        ## Paramètres
-        - atout:str \n
-            Couleur de l'atout en jeu"""
+        ### Paramètres
+        - atout: str (optionnel) \n
+                Couleur de l'atout en jeu"""
         if self.couleur == atout:
             return self.points_atout[self.valeur]
         else:
@@ -61,14 +61,18 @@ class Pile:
     ---
     ### Attributs :
     - cartes : list[Carte] \n
-        une liste d'objets Carte pour stocker les cartes qui sont dans la pile
+            une liste d'objets Carte pour stocker les cartes qui sont dans la pile
 
     --- 
     ### Méthodes :
     - couper()\n
-        modifier cartes comme quand on coupe la pile
+            modifier cartes comme quand on coupe la pile
     - distribuer() \n 
-        ajoute des cartes à un joueur et les enlève de la pile
+            ajoute des cartes à un joueur et les enlève de la pile
+    - couleurs() \n
+            renvoie la liste des couleurs de chaque carte
+    - maitre() \n
+            renvoie la valeur de la carte maitresse ainsi que sa position dans la pile
     """
 
 
@@ -88,14 +92,37 @@ class Pile:
         """Ajoute des cartes à un joueur et les retire de la pile
         
         ---
-        ## Paramètres
+        ### Paramètres
         - nb: int \n
-            Nombre de cartes à distribuer
+                Nombre de cartes à distribuer
         - joueur: object \n
-            Joueur qui reçoit les cartes"""
+                Joueur qui reçoit les cartes"""
         
         joueur.cartes += self.cartes[:nb]
         self.cartes = self.cartes[nb:]
+    
+    def couleurs(self) -> list[str]:
+        """Renvoie la liste des couleurs de chaque carte dans la pile"""
+        result = [""] * len(self.cartes)
+        for i in range(len(self.cartes)):
+            result[i] = self.cartes[i].couleur
+        return result
+
+    def maitre(self, atout: str = '') -> tuple[int, int]:
+        """Renvoie la valeur de la carte maitresse ainsi que sa position dans la pile
+        
+        ---
+        ### Paramètres
+        - atout: str (optionnel) \n
+                Couleur de l'atout dans le jeu
+        """
+        i_max = 0
+        pt_max = 0
+        for i in range(len(self.cartes)):
+            if self.cartes[i].point(atout) > pt_max:
+                i_max = i
+                pt_max = self.cartes[i].point(atout)
+        return (pt_max, i_max)
 
 
 
@@ -104,17 +131,23 @@ class Joueur:
     """Classe représentant un joueur
     
     ---
-    ## Attributs
+    ### Attributs
     - cartes: list[Carte] \n
-        cartes que le joueur a en main
-    - nom: str\n
-        nom du joueur"""
+            cartes que le joueur a en main
+    - nom: str \n
+            nom du joueur
+
+    ---
+    ### Méthodes
+    - distribuer() \n
+            Le joueur donne des cartes à une pile
+    """
     
     
     def __init__(self, nom: str) -> None:
-        """## Paramètres
+        """### Paramètres
         - nom: str \n
-            nom du joueur"""
+                nom du joueur"""
         self.nom = nom
         self.cartes:list[Carte] = []
     
@@ -126,11 +159,11 @@ class Joueur:
         """Ajoute des cartes à une pile et les retire du jeu du joueur
         
         ---
-        ## Paramètres
+        ### Paramètres
         - nb: int \n
-            Nombre de cartes à distribuer
+                Nombre de cartes à distribuer
         - pile: object \n
-            Pile qui reçoit les cartes"""
+                Pile qui reçoit les cartes"""
         
         pile.cartes += self.cartes[:nb]
         self.cartes = self.cartes[nb:]
@@ -142,26 +175,29 @@ class Jeu:
     """Classe représentant une partie de belote
     
     ---
-    ## Attributs
+    ### Attributs
     - atout: str \n
-        Couleur de l'atout à un moment du jeu
+            Couleur de l'atout à un moment du jeu
     - i_donneur: int \n
-        Position du donneur dans la liste de joeurs
+            Position du donneur dans la liste de joeurs
     - joueur: list[Joueur] \n
-        Liste des joueurs dans la partie
+            Liste des joueurs dans la partie
     - pile: Pile \n
-        Pile des cartes de la partie
+            Pile des cartes de la partie
     - pli: Pile \n
-        Pile des cartes qui sont en jeu dans un tour
+            Pile des cartes qui sont en jeu dans un tour
         
     ---
     ## Méthodes
     - tour_atout() \n
-        Lance un tour où on choisit la couleur de l'atout
+            Lance un tour où on choisit la couleur de l'atout
     - distribution() \n
-        Distribue les cartes aux joueurs et propose l'atout
+            Distribue les cartes aux joueurs et propose l'atout
     - tour() \n
-        Lance un tour du jeu où les joueurs posent leur carte"""
+            Lance un tour du jeu où les joueurs posent leur carte
+    - carte_valide() \n
+            Test la validité de la carte que l'on veut jouer
+    """
     
 
     atout:str = ""
@@ -244,6 +280,36 @@ class Jeu:
                     i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
 
                 joueur.distribuer(1, self.pli)
+
+            # autres joueurs
+            else:
+                input(f"Au tour de {joueur.nom}")
+                print(f"{joueur.nom}: {joueur}")
+                i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
+                while 1 > i_carte  or i_carte > len(joueur.cartes):
+                    print("Carte non valide")
+                    i_carte = int(input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})"))
+        
+    def carte_valide(self, i_carte: int, joueur: Joueur) -> bool:
+        """Renvoie True si la carte peut être posée et False sinon"""
+        if 1 > i_carte  or i_carte > len(joueur.cartes):
+            return False
+        
+        carte = joueur.cartes[i_carte - 1]
+
+        if self.atout in self.pli.couleurs(): # un atout a été posé avant
+            if carte.couleur == self.atout: # le joueur joue un atout
+                if carte.point(self.atout) >= self.pli.maitre(self.atout)[0]: # le joueur monte à l'atout
+                    return True
+                # meilleur atout dans le jeu du joueur ? True ; False
+            # le joueur n'a pas d'atout dans le jeu ? True ; False
+        # carte jouée même couleur : True
+        # carte même couleur dans le jeu : False
+        # equipier maitre : True
+        # carte jouée est atout : True
+        # Le joueur n'a pas d'atout dans son jeu : True False
+                
+
                 
     # TODO
     # Mettre une manche : 8 plis + compter les points
