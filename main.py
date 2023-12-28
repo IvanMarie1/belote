@@ -369,7 +369,7 @@ class Jeu:
             print("Carte non valide")
             i_carte = input(f"Quelle carte voulez-vous jouer (1-{len(joueur.cartes)})")
 
-        return i_carte
+        return int(i_carte)
 
 
     def carte_valide(self, i_carte: str, joueur: Joueur, i_joueur: int) -> bool:
@@ -390,7 +390,7 @@ class Jeu:
             i_carte = int(i_carte)
         except ValueError:
             return False
-
+        
         if 1 > i_carte  or i_carte > len(joueur.cartes):
             return False
     
