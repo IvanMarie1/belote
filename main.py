@@ -409,7 +409,7 @@ class Jeu:
                 return False
             if carte.point(self.atout) >= pt_maitre: # le joueur monte à l'atout
                 return True
-            return not (True in [carte_temp.point(self.atout) >= pt_maitre for carte_temp in joueur.cartes]) # le joueur ne peut pas monter à l'atout
+            return not (True in [(carte_temp.point(self.atout) >= pt_maitre) and (carte_temp.couleur == self.atout) for carte_temp in joueur.cartes]) # le joueur ne peut pas monter à l'atout
                 
         
         if carte.couleur == self.pli.cartes[0].couleur: # on joue la même couleur que l'entame
