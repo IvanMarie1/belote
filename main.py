@@ -244,7 +244,10 @@ class Jeu:
         Couleur de l'atout à un moment du jeu
     
     i_donneur: int
-        Position du donneur dans la liste de joeurs
+        Position du donneur dans la liste de joueurs
+
+    i_premier_joueur: int
+        Position du joueur qui pose la première carte
     
     joueur: list[Joueur]
         Liste des joueurs dans la partie
@@ -291,6 +294,7 @@ class Jeu:
     def __init__(self) -> None:
         self.atout:str = ""
         self.i_donneur = r.randint(0,3)
+        self.i_premier_joueur = 0
         self.joueurs:list[Joueur] = [Joueur(nom, i) for i, nom in enumerate('J1 J2 J3 J4'.split(), 0)]
 
         self.pile:Pile = Pile()
@@ -311,22 +315,22 @@ class Jeu:
         
         # premier tour
         for i in range(4):
-            joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+            joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
             print(f"{joueur.nom} : {joueur}")
             rep = input(f"{joueur.nom}, veux-tu l'atout ? (o/n) ")
             if rep == "o":
                 self.pile.distribuer(1, joueur.cartes)
                 self.atout = carte_atout.couleur
-                self.equipe_pari = (self.i_donneur + i + 1)%2
+                self.equipe_pari = (self.i_donneur + 1 + i)%2
                 return
         # deuxième tour 
         for i in range(4):
-            joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+            joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
             print(f"{joueur.nom} : {joueur}")
             rep = input(f"{joueur.nom}, quelle couleur d'atout veux-tu ? (♥/♦/♣/♠/2) ")
             if rep in '♥♦♣♠' and len(rep) > 0:
                 self.atout = rep
-                self.equipe_pari = (self.i_donneur + i + 1)%2
+                self.equipe_pari = (self.i_donneur + 1 + i)%2
                 return
         
         # Personne n'a voulu l'atout : on ramasse et on coupe
@@ -340,38 +344,40 @@ class Jeu:
         self.atout = ""
 
         while self.atout == "": # Tant qu'il n'y a pas d'atout
-            self.i_donneur += 1
+            self.i_donneur = (self.i_donneur + 1) % 4
             for i in range(4):
-                joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+                joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
                 self.pile.distribuer(3, joueur.cartes)
             for i in range(4):
-                joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+                joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
                 self.pile.distribuer(2, joueur.cartes)
             
             self.tour_atout()
 
         # distribue les dernières cartes
         for i in range(4):
-            joueur = self.joueurs[(self.i_donneur + i + 1)%4]
+            joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
             if len(joueur.cartes) == 5:
                 self.pile.distribuer(3, joueur.cartes)
             else:
                 self.pile.distribuer(2, joueur.cartes)
+
+        self.i_premier_joueur = (self.i_donneur + 1) % 4
 
 
     def tour(self) -> None:
         """Lance un tour du jeu et le joueur avec la meilleur carte remporte le pli et joue au tour suivant"""
         
         for i in range(4):
-            joueur = self.joueurs[(self.i_donneur + 1 + i)%4]
+            joueur = self.joueurs[(self.i_premier_joueur + i)%4]
             
             i_carte = self.choix_carte(i, joueur)
 
             joueur.jouer(i_carte, self.pli)
 
-        i_maitre = (self.pli.maitre(self.atout)[1] + self.i_donneur + 1) % 4
+        i_maitre = (self.pli.maitre(self.atout)[1] + self.i_premier_joueur) % 4
         self.pli.distribuer(4, self.joueurs[i_maitre].cartes_gagnees)
-        self.i_donneur = i_maitre - 1
+        self.i_premier_joueur = i_maitre
 
 
     def choix_carte(self, i_joueur: int, joueur: Joueur) -> int:
@@ -479,21 +485,20 @@ class Jeu:
 
         # dernier tour (aucun choix)
         for i in range(4):
-            joueur = self.joueurs[(self.i_donneur + 1 + i) % 4]
+            joueur = self.joueurs[(self.i_premier_joueur + i) % 4]
             joueur.jouer(1, self.pli)
 
-        i_maitre = (self.pli.maitre(self.atout)[1] + self.i_donneur + 1) % 4
+        i_maitre = (self.pli.maitre(self.atout)[1] + self.i_premier_joueur + 1) % 4
         self.pli.distribuer(4, self.joueurs[i_maitre].cartes_gagnees)
         self.i_dix_de_der = i_maitre
 
         self.compte_points()
+        self.i_donneur = (self.i_donneur + 1) % 4
             
 
 
                 
     # TODO
-    # Mettre une manche : 8 plis + compter les points
-    # Comptage : On compte les points par équipe avec toutes les règles (voir site) et on l'ajoute à un compteur de la partie
     # On repète les manches tant que le score max < 1001
 
 
