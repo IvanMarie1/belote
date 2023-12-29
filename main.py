@@ -80,9 +80,7 @@ class Pile:
         renvoie la liste des couleurs de chaque carte
     
     maitre()
-        renvoie la valeur de la carte maitresse ainsi que sa position dans la pile
-    """
-
+        renvoie la valeur de la carte maitresse ainsi que sa position dans la pile"""
 
     def __init__(self) -> None:
         self.cartes: list[Carte] = []
@@ -90,10 +88,12 @@ class Pile:
     def __repr__(self) -> str:
         return " | ".join(map(repr, self.cartes))
 
+    
     def couper(self) -> None:
         """Coupe la pile en deux et met le bas en haut pour mélanger"""
         milieu = len(self.cartes) // 2
         self.cartes = self.cartes[milieu:] + self.cartes[:milieu]
+    
     
     def distribuer(self, nb:int, tas:list) -> None:
         """Ajoute des cartes à un joueur et les retire de la pile
@@ -110,6 +110,7 @@ class Pile:
         tas += self.cartes[:nb]
         self.cartes = self.cartes[nb:]
     
+    
     def couleurs(self) -> list[str]:
         """Renvoie la liste des couleurs de chaque carte dans la pile"""
         result = [""] * len(self.cartes)
@@ -117,6 +118,7 @@ class Pile:
             result[i] = self.cartes[i].couleur
         return result
 
+    
     def maitre(self, atout: str = '') -> tuple[int, int]:
         """Renvoie la valeur de la carte maitresse ainsi que sa position dans la pile
         
@@ -176,7 +178,6 @@ class Joueur:
         Renvoie les couleurs des cartes du joueur
     """
     
-    
     def __init__(self, nom: str, pos: int) -> None:
         """### Paramètres
         nom: str
@@ -207,6 +208,7 @@ class Joueur:
         pile.cartes += self.cartes[:nb]
         self.cartes = self.cartes[nb:]
     
+    
     def couleurs(self) -> list[str]:
         """Renvoie la liste des couleurs de chaque carte du joueur"""
         result = []
@@ -214,13 +216,14 @@ class Joueur:
             result.append(carte.couleur)
         return result
 
+    
     def jouer(self, i_carte: int, pile: Pile) -> None:
         """Joue une carte et la pose dans une pile
         
         ---
         ### Paramètres
         i_carte: int
-            position de la carte dans le jeu du joueur
+            position de la carte dans le jeu du joueur (à partir de 1)
 
         pile: Pile 
             pile qui reçoit la carte
@@ -251,6 +254,15 @@ class Jeu:
     
     pli: Pile
         Pile des cartes qui sont en jeu dans un tour
+    
+    points: list[int]
+        Points marqués par les équipes (équipe0 : j0-2 // équipe1 : j1-3)
+    
+    equipe_pari: int
+        Indice de l'équipe qui prend le pari (équipe0 : j0-2 // équipe1 : j1-3)
+
+    i_dix_de_der: int
+        Indice du joueur qui a remporté le dernier pli (+10 points)
         
     ---
     ### Méthodes
@@ -262,9 +274,18 @@ class Jeu:
     
     tour()
         Lance un tour du jeu où les joueurs posent leur carte
+
+    choix_carte()
+        Le joueur choisit une carte jusqu'à ce qu'elle soit valide
     
     carte_valide()
-        Test la validité de la carte que l'on veut jouer
+        Teste la validité de la carte que l'on veut jouer
+    
+    compte_points()
+        Compte les points de chaque équipe à la fin d'une manche
+    
+    manche()
+        Lance une manche du jeu : distribution + 8 tours + comptage des points
     """
     
     def __init__(self) -> None:
@@ -278,6 +299,9 @@ class Jeu:
 
         self.pli: Pile = Pile()
 
+        self.points: list[int] = [0, 0]
+        self.equipe_pari: int = 0
+        self.i_dix_de_der: int = 0
 
     def tour_atout(self) -> None:
         """Propose la première carte de la pile comme atout et les joueurs décident s'il la prenne ou pas"""
@@ -293,6 +317,7 @@ class Jeu:
             if rep == "o":
                 self.pile.distribuer(1, joueur.cartes)
                 self.atout = carte_atout.couleur
+                self.equipe_pari = (self.i_donneur + i + 1)%2
                 return
         # deuxième tour 
         for i in range(4):
@@ -301,6 +326,7 @@ class Jeu:
             rep = input(f"{joueur.nom}, quelle couleur d'atout veux-tu ? (♥/♦/♣/♠/2) ")
             if rep in '♥♦♣♠' and len(rep) > 0:
                 self.atout = rep
+                self.equipe_pari = (self.i_donneur + i + 1)%2
                 return
         
         # Personne n'a voulu l'atout : on ramasse et on coupe
@@ -421,7 +447,48 @@ class Jeu:
         if carte.couleur == self.atout: # on joue atout
             return True
         return not self.atout in joueur.couleurs() # on ne peut pas jouer atout
-                
+
+
+    def compte_points(self) -> None:
+        """Actualise les scores en comptant les points de chaque équipe selon les cartes qu'elles ont récupérées"""
+        points_temp = [0, 0]
+        # compte les points des cartes de chaque joueur
+        for i in range(4):
+            joueur = self.joueurs[i]
+            for carte in joueur.cartes_gagnees:
+                points_temp[i%2] += carte.point(self.atout)
+        # points du dix de der
+        points_temp[self.i_dix_de_der % 2] += 10
+
+        # pari non remorté
+        if points_temp[self.equipe_pari] < 82:
+            points_temp[self.equipe_pari] = 0
+            points_temp[(self.equipe_pari + 1) % 2] = 162
+        
+        # on ajoute les points au total
+        self.points[0] += points_temp[0]
+        self.points[1] += points_temp[1]
+
+
+    def manche(self) -> None:
+        """Lance une manche du jeu : distribution // 8 plis // comptage des points"""
+        self.distribution()
+
+        for _ in range(7):
+            self.tour()
+
+        # dernier tour (aucun choix)
+        for i in range(4):
+            joueur = self.joueurs[(self.i_donneur + 1 + i) % 4]
+            joueur.jouer(1, self.pli)
+
+        i_maitre = (self.pli.maitre(self.atout)[1] + self.i_donneur + 1) % 4
+        self.pli.distribuer(4, self.joueurs[i_maitre].cartes_gagnees)
+        self.i_dix_de_der = i_maitre
+
+        self.compte_points()
+            
+
 
                 
     # TODO
