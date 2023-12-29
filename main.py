@@ -232,6 +232,16 @@ class Joueur:
         self.cartes = self.cartes[:i_carte - 1] + self.cartes[i_carte:]
 
 
+    def ramasser(self, pile: Pile) -> None:
+        """Ramasse les cartes gagnées par le joueur
+        
+        ---
+        ### Paramètres
+        pile: Pile
+            Pile qui va recevoir les cartes"""
+        pile.cartes += self.cartes_gagnees
+        self.cartes_gagnees = []
+
 
 
 
@@ -289,6 +299,9 @@ class Jeu:
     
     manche()
         Lance une manche du jeu : distribution + 8 tours + comptage des points
+    
+    partie()
+        Lance des manches jusqu'à ce que le score dépasse 1000
     """
     
     def __init__(self) -> None:
@@ -494,19 +507,31 @@ class Jeu:
 
         self.compte_points()
         self.i_donneur = (self.i_donneur + 1) % 4
-            
+
+        # on ramasse les cartes
+        for joueur in self.joueurs:
+            joueur.ramasser(self.pile)
+        self.pile.couper()
+    
+
+    def partie(self) -> None:
+        """Lance une partie de belote : on répète des manches jusqu'a ce que le score dépasse 1000"""
+
+        print("""
+            {lig}
+            {gap}
+            #{txt:^48}#
+            {gap}
+            {lig}""".format(lig="#"*50, gap="#" + 48*" " + "#", txt="PARTIE DE BELOTE")
+        )
 
 
-                
-    # TODO
-    # On repète les manches tant que le score max < 1001
+        while max(self.points) <= 1000:
+            self.manche()
+            print(self.points)
+            input("\n" * 10 + "MANCHE SUIVANTE")
 
 
 # debug
 j = Jeu()
-j.distribution()
-for i in range(8):
-    j.tour()
-
-for joueur in j.joueurs:
-    print(joueur.cartes_gagnees)
+j.partie()
